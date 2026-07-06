@@ -1,0 +1,28 @@
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Account {
+  vpa        String   @id
+  holderName String
+  balance    Decimal
+  version    Int      @default(0)
+}
+
+model Transaction {
+  id           Int      @id @default(autoincrement())
+  packetHash   String   @unique
+  senderVpa    String
+  receiverVpa  String
+  amount       Decimal
+  signedAt     DateTime
+  settledAt    DateTime
+  bridgeNodeId String
+  hopCount     Int
+  status       String
+}
