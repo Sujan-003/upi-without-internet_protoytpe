@@ -25,31 +25,6 @@ A simulation backend for an internet-free payment pipeline where an offline user
 
 ---
 
-flowchart TD
-  A["Packet arrives"] --> B["Calculate packet hash"]
-  B --> C["Check in-memory duplicate cache"]
-  
-  C -->|Duplicate| X["Drop duplicate"]
-  C -->|New| D["Decrypt packet"]
-  
-  D --> E["Check timestamp valid?"]
-  E -->|Expired| X
-  
-  E --> F["Atomic DB Upsert:<br/>Set status to PENDING"]
-  
-  F -->|Already Exists/Success| X
-  F -->|Already Pending| J["Return 429 / Retry Later"]
-  
-  F -->|New/Allowed| G["Execute Settlement"]
-  
-  G -->|Success| H["Update DB: SUCCESS<br/>Evict Memory Cache"]
-  G -->|Temporary Failure| I["Update DB: FAILED<br/>Release Memory Claim"]
-  
-  I --> K["Return error with packet hash"] --> A
-
---- 
-
-
 ## Directory Structure
 ```
 upi-mesh-js/
