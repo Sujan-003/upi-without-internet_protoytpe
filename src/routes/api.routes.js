@@ -78,7 +78,8 @@ router.post('/mesh/flush', async (req, res) => {
     
     // Process concurrently simulating simultaneous uploads from separate bridges
     const results = await Promise.all(uploads.map(async (up) => {
-      const hopCount = 5 - up.packet.ttl;
+      const initialTtl = up.packet.initialTtl !== undefined ? up.packet.initialTtl : 5;
+      const hopCount = initialTtl - up.packet.ttl;
       const r = await bridgeIngestionService.ingest(up.packet, up.bridgeNodeId, hopCount);
       return {
         bridgeNode: up.bridgeNodeId,

@@ -74,6 +74,7 @@ class MeshSimulatorService {
           const copy = {
             packetId: pkt.packetId,
             ttl: pkt.ttl - 1,
+            initialTtl: pkt.initialTtl,
             createdAt: pkt.createdAt,
             ciphertext: pkt.ciphertext
           };

@@ -36,11 +36,12 @@ class DemoService {
    * @returns {Promise<Object>} The generated MeshPacket object
    */
   async createPacket(senderVpa, receiverVpa, amount, pin, ttl) {
+    const normalizedAmount = new Prisma.Decimal(amount).toFixed();
     const pinHash = this.sha256Hex(pin);
     const instruction = {
       senderVpa,
       receiverVpa,
-      amount: amount,
+      amount: normalizedAmount,
       pinHash,
       nonce: crypto.randomUUID(),
       signedAt: Date.now()
@@ -51,6 +52,7 @@ class DemoService {
     const packet = {
       packetId: crypto.randomUUID(),
       ttl: ttl,
+      initialTtl: ttl,
       createdAt: Date.now(),
       ciphertext
     };

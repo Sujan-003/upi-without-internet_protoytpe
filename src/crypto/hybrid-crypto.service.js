@@ -25,7 +25,7 @@ class HybridCryptoService {
     aesCiphertext = Buffer.concat([aesCiphertext, cipher.final()]);
     const gcmTag = cipher.getAuthTag(); // 16 bytes tag
 
-    // Combine ciphertext and tag, matching Java's behavior where aesCiphertext has the tag appended
+    // Combine ciphertext and tag, where aesCiphertext has the GCM auth tag appended
     const ciphertextWithTag = Buffer.concat([aesCiphertext, gcmTag]);
 
     // 3. RSA-OAEP encrypt the AES key with SHA-256

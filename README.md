@@ -1,6 +1,12 @@
-# UPI Offline Mesh Simulation (JavaScript Port)
+# Offline UPI Payment Backend Simulator | Node.js, Express, Prisma, SQLite
 
-This project is a plain JavaScript port of the Spring Boot offline UPI-style mesh payment simulation backend. It preserves the exact API flows, cryptographic behavior, mesh simulation gossip, dashboard interface, and concurrency/idempotency validation mechanics.
+A simulation backend for an internet-free payment pipeline where an offline user can safely route a digital payment packet through a nearby, connected device (bridge) to reach the bank's servers.
+
+## Key Features
+- **Internet-Free Pipeline:** Simulated an internet-free payment pipeline where an offline user can safely route a digital payment packet through a nearby, connected device to reach the bank's servers.
+- **End-to-End Security:** Protected sensitive banking data from middlemen by combining AES and RSA encryption, ensuring the intermediate device forwarding the payment cannot read the user’s PIN or transaction details.
+- **Double-Spending Prevention:** Prevented duplicate charges and double-spending by generating unique transaction tokens and using Prisma database constraints to automatically drop identical, overlapping requests.
+- **Replay Attack Protection:** Blocked replay attacks by embedding an expiration timestamp (Time-To-Live) into each payment packet, causing the backend to reject any transaction reused outside a tight 60-second window (configurable validation window).
 
 ## Important Caveats & Scope
 - **This is NOT a real UPI/NPCI integration.** It is a conceptual proof-of-concept for offline payment validation.
@@ -116,7 +122,7 @@ The test runner utilizes `node --experimental-vm-modules` to support ES module s
    - Once a gossip round carries the packet to `phone-bridge` (which has simulated 4G internet), click **Bridges Upload to Backend**.
    - *Under the hood*: All bridge devices concurrently upload their held packets to `/api/bridge/ingest`.
    - The server hashes the ciphertext. The **Idempotency Cache** locks the hash. If multiple bridges upload the same packet concurrently, only the first upload completes validation and updates the ledger. The others are dropped as duplicates (`DUPLICATE_DROPPED`).
-   - The server decrypts the ciphertext, checks packet freshness (max age 86,400s), and transfers funds inside a database transaction with optimistic locking.
+   - The server decrypts the ciphertext, checks packet freshness (validation window), and transfers funds inside a database transaction with optimistic locking.
 
 4. **Reset**:
    - Click **Reset Mesh + Cache** to clear the virtual devices' memory and clear the server's idempotency cache for another run.

@@ -1,12 +1,15 @@
 import hybridCryptoService from '../crypto/hybrid-crypto.service.js';
 import idempotencyService from './idempotency.service.js';
 import settlementService from './settlement.service.js';
+import transactionRepository from '../repositories/transaction.repository.js';
+import { Prisma } from '@prisma/client';
 
 class BridgeIngestionService {
   constructor(maxAgeSeconds = 86400) {
     this.crypto = hybridCryptoService;
     this.idempotency = idempotencyService;
     this.settlement = settlementService;
+    this.transactions = transactionRepository;
     this.maxAgeSeconds = maxAgeSeconds;
   }
 
@@ -20,8 +23,9 @@ class BridgeIngestionService {
    * @returns {Promise<Object>} IngestResult containing outcome, packetHash, reason, transactionId
    */
   async ingest(packet, bridgeNodeId, hopCount) {
+    let packetHash = '?';
     try {
-      const packetHash = this.crypto.hashCiphertext(packet.ciphertext);
+      packetHash = this.crypto.hashCiphertext(packet.ciphertext);
 
       // ---- Idempotency gate ----
       if (!this.idempotency.claim(packetHash)) {
@@ -69,6 +73,17 @@ class BridgeIngestionService {
         };
       }
 
+      // ---- DB Idempotency gate ----
+      if (await this.transactions.existsByPacketHash(packetHash)) {
+        console.info(`DUPLICATE packet ${packetHash.substring(0, 12)}... already in database — dropped`);
+        return {
+          outcome: 'DUPLICATE_DROPPED',
+          packetHash,
+          reason: null,
+          transactionId: null
+        };
+      }
+
       // ---- Settle ----
       const tx = await this.settlement.settle(instruction, packetHash, bridgeNodeId, hopCount);
       return {
@@ -79,10 +94,24 @@ class BridgeIngestionService {
       };
 
     } catch (err) {
+      if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {
+        console.info(`DUPLICATE packet ${packetHash.substring(0, 12)}... constraint race — dropped`);
+        return {
+          outcome: 'DUPLICATE_DROPPED',
+          packetHash,
+          reason: null,
+          transactionId: null
+        };
+      }
+
+      if (packetHash !== '?') {
+        this.idempotency.release(packetHash);
+      }
+
       console.error(`Ingestion error: ${err.message}`, err);
       return {
         outcome: 'INVALID',
-        packetHash: '?',
+        packetHash,
         reason: 'internal_error: ' + err.message,
         transactionId: null
       };

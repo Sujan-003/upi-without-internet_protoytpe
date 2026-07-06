@@ -30,6 +30,14 @@ class IdempotencyService {
   }
 
   /**
+   * Release/delete a claimed hash from the cache.
+   * @param {string} packetHash
+   */
+  release(packetHash) {
+    this.seen.delete(packetHash);
+  }
+
+  /**
    * Returns size of the cache.
    * @returns {number}
    */
